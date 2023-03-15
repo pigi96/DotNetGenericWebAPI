@@ -1,20 +1,35 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 
 namespace GenericWebAPI.Configuration;
 
-public class SwaggerConfig
+public static class SwaggerExtensions
 {
-    public static void ConfigureSwaggerWithAuth(IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection ConfigureSwaggerWithAuth(this IServiceCollection services, IConfiguration configuration,
+        bool auth = true)
     {
+        if (auth)
+        {
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddMicrosoftIdentityWebApi(configuration.GetSection("AzureAd"));
+        }
+
         services.AddSwaggerGen(c =>
         {
-            var scopesArray = configuration.GetSection("AzureAd:Swagger")["Scopes-optional"].Split(",").Select(s => s.Trim())
+            var scopesArray = configuration.GetSection("AzureAd:Swagger")["Scopes-optional"].Split(",")
+                .Select(s => s.Trim())
                 .ToArray();
-            
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = configuration.GetSection("AzureAd:Swagger:Api")["Name"], Version = configuration.GetSection("AzureAd:Swagger:Api")["Version"] });
+
+            c.SwaggerDoc("v1",
+                new OpenApiInfo
+                {
+                    Title = configuration.GetSection("AzureAd:Swagger:Api")["Name"],
+                    Version = configuration.GetSection("AzureAd:Swagger:Api")["Version"]
+                });
             c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
             {
                 Type = SecuritySchemeType.OAuth2,
@@ -42,15 +57,25 @@ public class SwaggerConfig
                 }
             });
         });
+
+        return services;
     }
 
-    public static void ConfigureSwaggerUIWithAuth(WebApplication app, IConfiguration configuration)
+    public static IApplicationBuilder ConfigureSwaggerUIWithAuth(this IApplicationBuilder app, IConfiguration configuration, bool auth = true)
     {
+        if (auth)
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+        }
+
+        app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
-            var scopesArray = configuration.GetSection("AzureAd:Swagger")["Scopes-selected"].Split(",").Select(s => s.Trim())
+            var scopesArray = configuration.GetSection("AzureAd:Swagger")["Scopes-selected"].Split(",")
+                .Select(s => s.Trim())
                 .ToArray();
-            
+
             options.EnableDeepLinking();
             options.DisplayRequestDuration();
             options.OAuthClientId(configuration.GetSection("AzureAd")["ClientId"]);
@@ -59,5 +84,7 @@ public class SwaggerConfig
             options.OAuthScopeSeparator(" ");
             options.OAuthUseBasicAuthenticationWithAccessCodeGrant();
         });
+
+        return app;
     }
 }
