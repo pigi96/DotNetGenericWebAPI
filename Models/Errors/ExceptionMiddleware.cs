@@ -2,7 +2,7 @@ using System.Net;
 using GenericWebAPI.Models.Errors;
 using Microsoft.AspNetCore.Http;
 
-namespace GenericWebAPI.Configuration;
+namespace GenericWebAPI.Models.Errors;
 
 public class ExceptionMiddleware
 {

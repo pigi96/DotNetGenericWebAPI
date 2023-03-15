@@ -70,7 +70,7 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
     public async Task<TDto> Add(TDto dto)
     {
         _validator.ValidateAdd(dto);
-        _businessStrategy.ApplyAdd(dto);
+        await _businessStrategy.ApplyAdd(dto);
         
         var model = await _coreRepository.Add(_mapper.Map<TEntity>(dto));
         
@@ -108,7 +108,7 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
     {
         var entity = await _coreRepository.GetById(id);
 
-        _businessStrategy.ApplyDelete(entity);
+        await _businessStrategy.ApplyDelete(entity);
         
         await _coreRepository.DeleteById(id);
         await _coreRepository.SaveChanges();
@@ -128,9 +128,10 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
     {
         var entity = await _coreRepository.GetByPredicate(ConvertPredicate<TDto, TEntity>(predicate));
 
-        _businessStrategy.ApplyDelete(entity);
+        await _businessStrategy.ApplyDelete(entity);
 
         await _coreRepository.Delete(entity);
+        await _coreRepository.SaveChanges();
     }
     
     private static Expression<Func<TEntity, bool>> ConvertPredicate<TDto, TEntity>(Expression<Func<TDto, bool>> predicate)
@@ -140,5 +141,4 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
         var bodyExpr = visitor.Visit(predicate.Body);
         return Expression.Lambda<Func<TEntity, bool>>(bodyExpr, parameterExpr);
     }
-
 }
