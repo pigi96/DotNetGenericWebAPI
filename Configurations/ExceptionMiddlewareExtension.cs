@@ -1,3 +1,4 @@
+using GenericWebAPI.Models.Errors;
 using Microsoft.AspNetCore.Builder;
 
 namespace GenericWebAPI.Configuration;

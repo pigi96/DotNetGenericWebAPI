@@ -10,8 +10,8 @@ public abstract class MailSystem
 
     protected MailSystem(IConfiguration configuration)
     {
-        _smtpClient = new SmtpClient(configuration.GetSection("AppConfigurations:Mail-System:Smtp-Client")["Host"], int.Parse(configuration.GetSection("AppConfigurations:Mail-System:Smtp-Client")["Port"]));
-        _smtpClient.Credentials = new NetworkCredential(configuration.GetSection("AppConfigurations:Mail-System:Smtp-Client:Credentials")["E-Mail"], configuration.GetSection("AppConfigurations:Mail-System:Smtp-Client:Credentials")["Password"]);
+        _smtpClient = new SmtpClient(configuration.GetSection("WebGenAPI:Mail-System:Smtp-Client")["Host"], int.Parse(configuration.GetSection("WebGenAPI:Mail-System:Smtp-Client")["Port"]));
+        _smtpClient.Credentials = new NetworkCredential(configuration.GetSection("WebGenAPI:Mail-System:Smtp-Client:Credentials")["E-Mail"], configuration.GetSection("WebGenAPI:Mail-System:Smtp-Client:Credentials")["Password"]);
         _smtpClient.EnableSsl = true;
     }
     

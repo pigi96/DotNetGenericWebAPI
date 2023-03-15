@@ -4,19 +4,25 @@ namespace GenericWebAPI.Utilities;
 
 public class PredicateVisitor<TDto, TEntity> : ExpressionVisitor
 {
-    private readonly ParameterExpression _parameterExpr;
+    private readonly ParameterExpression _parameter;
 
-    public PredicateVisitor(ParameterExpression parameterExpr)
+    public PredicateVisitor(ParameterExpression parameter)
     {
-        _parameterExpr = parameterExpr;
+        _parameter = parameter;
     }
 
-    protected override Expression VisitParameter(ParameterExpression node)
+    protected override Expression VisitMember(MemberExpression node)
     {
-        if (node.Type == typeof(TDto))
+        if (node.Member.DeclaringType == typeof(TDto))
         {
-            return _parameterExpr;
+            var memberName = node.Member.Name;
+            var entityMember = typeof(TEntity).GetProperty(memberName);
+            if (entityMember == null)
+            {
+                throw new InvalidOperationException($"The property '{memberName}' is not defined for type '{typeof(TEntity)}'");
+            }
+            return Expression.MakeMemberAccess(_parameter, entityMember);
         }
-        return base.VisitParameter(node);
+        return base.VisitMember(node);
     }
 }

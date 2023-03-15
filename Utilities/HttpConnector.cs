@@ -14,9 +14,9 @@ public abstract class HttpConnector
     
     protected HttpConnector(IConfiguration configuration)
     {
-        _client = new RestClient(configuration.GetSection("AppConfigurations:Source-Avto-Net")["Hostname"]);
-        _userAgent = configuration.GetSection("AppConfigurations:Required-Headers")["User-Agent"];
-        _acceptLanguage = configuration.GetSection("AppConfigurations:Required-Headers")["Accept-Language"];
+        _client = new RestClient(configuration.GetSection("WebGenAPI:WebScrape")["Hostname"]);
+        _userAgent = configuration.GetSection("WebGenAPI:WebScrape:Headers")["User-Agent"];
+        _acceptLanguage = configuration.GetSection("WebGenAPI:WebScrape:Headers")["Accept-Language"];
     }
     
     protected async Task<HtmlDocument> ExecuteCall(string endpoint, Method method, object? body = null)

@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GenericWebAPI.Controllers.Extensions;
 
-public abstract class LazyCoreController<T> : ApiControllerBase where T : DtoCore, new()
+public abstract class LazyCoreController<TDto, TEntity> : ApiControllerBase
+    where TDto : DtoCore, new()
+    where TEntity : EntityCore, new()
 {
-    protected readonly IBusinessCoreService<T> _businessCoreService;
+    protected readonly IBusinessCoreService<TDto, TEntity> _businessCoreService;
 
-    protected LazyCoreController(IBusinessCoreService<T> businessCoreService)
+    protected LazyCoreController(IBusinessCoreService<TDto, TEntity> businessCoreService)
     {
         _businessCoreService = businessCoreService;
     }
@@ -49,13 +51,13 @@ public abstract class LazyCoreController<T> : ApiControllerBase where T : DtoCor
     }
 
     [HttpPost("add")]
-    public async Task<IActionResult> Add([FromBody] T entityDto)
+    public async Task<IActionResult> Add([FromBody] TDto entityDto)
     {
         return Ok(await _businessCoreService.Add(entityDto));
     }
 
     [HttpPut("update")]
-    public async Task<IActionResult> Update([FromBody] T entityDto)
+    public async Task<IActionResult> Update([FromBody] TDto entityDto)
     {
         return Ok(await _businessCoreService.Add(entityDto));
     }
@@ -74,7 +76,7 @@ public abstract class LazyCoreController<T> : ApiControllerBase where T : DtoCor
     }
     
     [HttpDelete("delete")]
-    public async Task<IActionResult> Delete([FromBody] T entityDto)
+    public async Task<IActionResult> Delete([FromBody] TDto entityDto)
     {
         await _businessCoreService.Delete(entityDto);
         return NoContent();

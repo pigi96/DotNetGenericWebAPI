@@ -26,4 +26,6 @@ public interface ICoreRepository<TEntity> where TEntity : EntityCore, new()
     Task Delete(TEntity entity);
     Task<bool> DeleteByPredicate(Expression<Func<TEntity, bool>> predicate);
     Task SaveChanges();
+    Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesById<TRelatedEntity>(Guid id, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new();
+    Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesByPredicate<TRelatedEntity>(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new();
 }
