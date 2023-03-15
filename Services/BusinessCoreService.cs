@@ -9,14 +9,17 @@ using GenericWebAPI.Utilities;
 
 namespace Fakeglass.Services.Extensions;
 
-public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TDto> where TEntity : EntityBase, new() where TDto : DtoCore, new()
+public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TDto, TEntity>
+    where TEntity : EntityBase, new() 
+    where TDto : DtoCore, new()
 {
     protected readonly ICoreRepository<TEntity> _coreRepository;
     protected readonly IMapper _mapper;
     protected readonly IValidator<TDto> _validator;
     protected readonly IBusinessStrategy<TEntity, TDto> _businessStrategy;
 
-    protected BusinessCoreService(ICoreRepository<TEntity> coreRepository, IMapper mapper, IValidator<TDto> validator, IBusinessStrategy<TEntity, TDto> businessStrategy)
+    protected BusinessCoreService(ICoreRepository<TEntity> coreRepository, IMapper mapper, IValidator<TDto> validator,
+        IBusinessStrategy<TEntity, TDto> businessStrategy)
     {
         _coreRepository = coreRepository;
         _mapper = mapper;
@@ -29,12 +32,11 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
         return _mapper.Map<TDto>(await _coreRepository.GetById(id));
     }
 
-    public async Task<TDto?> GetByPredicate(Expression<Func<TDto, bool>> predicate)
+    public async Task<TDto?> GetByPredicate(Expression<Func<TEntity, bool>> predicate)
     {
-        var entityPredicate = ConvertPredicate<TDto, TEntity>(predicate);
-        return _mapper.Map<TDto>(await _coreRepository.GetByPredicate(entityPredicate));
+        return _mapper.Map<TDto>(await _coreRepository.GetByPredicate(predicate));
     }
-    
+
     public async Task<List<TDto>> GetAll()
     {
         var entities = await _coreRepository.GetAll();
@@ -56,7 +58,7 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
     public async Task<List<TDto>> GetPageWithFilters(List<Filter> filters, IPagination pagination)
     {
         var entities = await _coreRepository.GetPageWithFilters(filters, pagination);
-        
+
         return entities
             .Select(entity => _mapper.Map<TDto>(entity))
             .ToList();
@@ -71,25 +73,25 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
     {
         _validator.ValidateAdd(dto);
         await _businessStrategy.ApplyAdd(dto);
-        
+
         var model = await _coreRepository.Add(_mapper.Map<TEntity>(dto));
-        
+
         await _coreRepository.SaveChanges();
         return _mapper.Map<TDto>(model);
     }
 
-    public async Task<TDto> Update(TDto dto, Expression<Func<TDto, bool>> predicate = null)
+    public async Task<TDto> Update(TDto dto, Expression<Func<TEntity, bool>> predicate = null)
     {
         _validator.ValidateUpdate(dto);
 
         var entity = predicate != null
-            ? await _coreRepository.GetByPredicate(ConvertPredicate<TDto, TEntity>(predicate))
+            ? await _coreRepository.GetByPredicate(predicate)
             : await _coreRepository.GetById(dto.Id);
-        
+
         _businessStrategy.ApplyUpdate(entity, dto);
-        
+
         var modelUpdated = await _coreRepository.Update(_mapper.Map<TEntity>(dto));
-        
+
         await _coreRepository.SaveChanges();
         return _mapper.Map<TDto>(modelUpdated);
     }
@@ -99,7 +101,7 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
         return await _coreRepository.ExistsById(id);
     }
 
-    public Task<bool> ExistsByPredicate(Expression<Func<TDto, bool>> predicate)
+    public Task<bool> ExistsByPredicate(Expression<Func<TEntity, bool>> predicate)
     {
         throw new NotImplementedException();
     }
@@ -109,7 +111,7 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
         var entity = await _coreRepository.GetById(id);
 
         await _businessStrategy.ApplyDelete(entity);
-        
+
         await _coreRepository.DeleteById(id);
         await _coreRepository.SaveChanges();
     }
@@ -117,24 +119,49 @@ public abstract class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<
     public async Task Delete(TDto dto)
     {
         var entity = await _coreRepository.GetById(dto.Id);
-        
+
         await _businessStrategy.ApplyDelete(entity);
-        
+
         await _coreRepository.Delete(_mapper.Map<TEntity>(dto));
         await _coreRepository.SaveChanges();
     }
 
-    public async Task DeleteByPredicate(Expression<Func<TDto, bool>> predicate)
+    public async Task DeleteByPredicate(Expression<Func<TEntity, bool>> predicate)
     {
-        var entity = await _coreRepository.GetByPredicate(ConvertPredicate<TDto, TEntity>(predicate));
+        var entity = await _coreRepository.GetByPredicate(predicate);
 
         await _businessStrategy.ApplyDelete(entity);
 
         await _coreRepository.Delete(entity);
         await _coreRepository.SaveChanges();
     }
-    
-    private static Expression<Func<TEntity, bool>> ConvertPredicate<TDto, TEntity>(Expression<Func<TDto, bool>> predicate)
+
+    public async Task<IEnumerable<TRelatedDto>> GetRelatedEntitiesById<TRelatedDto, TRelatedEntity>(Guid id,
+        Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) 
+        where TRelatedEntity : EntityCore, new()
+        where TRelatedDto : DtoCore, new()
+    {
+        var entities = await _coreRepository.GetRelatedEntitiesById(id, property);
+
+        return entities
+            .Select(entity => _mapper.Map<TRelatedDto>(entity))
+            .ToList();
+    }
+
+    public async Task<IEnumerable<TRelatedDto>> GetRelatedEntitiesByPredicate<TRelatedDto, TRelatedEntity>(
+        Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property)
+        where TRelatedEntity : EntityCore, new()
+        where TRelatedDto : DtoCore, new()
+    {
+        var entities = await _coreRepository.GetRelatedEntitiesByPredicate(predicate, property);
+
+        return entities
+            .Select(entity => _mapper.Map<TRelatedDto>(entity))
+            .ToList();
+    }
+
+    private static Expression<Func<TEntity, bool>> ConvertPredicate<TDto, TEntity>(
+        Expression<Func<TDto, bool>> predicate)
     {
         var parameterExpr = Expression.Parameter(typeof(TEntity));
         var visitor = new PredicateVisitor<TDto, TEntity>(parameterExpr);

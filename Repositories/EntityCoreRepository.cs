@@ -160,11 +160,26 @@ public abstract class EntityCoreRepository<TEntity> : ICoreRepository<TEntity> w
     
         return true;
     }
-
-
+    
     public virtual async Task SaveChanges()
     {
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesById<TRelatedEntity>(Guid id, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new()
+    {
+        return await _context.Set<TEntity>()
+            .Where(e => e.Id == id)
+            .SelectMany(property)
+            .ToListAsync();
+    }
+    
+    public async Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesByPredicate<TRelatedEntity>(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new()
+    {
+        return await _context.Set<TEntity>()
+            .Where(predicate)
+            .SelectMany(property)
+            .ToListAsync();
     }
 
     private IQueryable<TF> Convert<TF>(IQueryable<TF> queryable, Filter filter)
