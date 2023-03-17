@@ -2,7 +2,7 @@ namespace GenericWebAPI.Utilities;
 
 public interface IBusinessStrategy<TEntity, TDto>
 {
-    Task ApplyAdd(TDto dto);
-    Task ApplyUpdate(TEntity entity, TDto dto);
-    Task ApplyDelete(TEntity entity);
+    Task ApplyAdd(IEnumerable<TEntity> entities);
+    Task ApplyUpdate(IEnumerable<TEntity> entities);
+    Task ApplyDelete(IEnumerable<TEntity> entities);
 }

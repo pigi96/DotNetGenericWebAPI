@@ -1,18 +1,18 @@
 using GenericWebAPI.Filters.Filtering;
 using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
-using GenericWebAPI.Services.Extensions;
+using GenericWebAPI.Services.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GenericWebAPI.Controllers.Extensions;
+namespace GenericWebAPI.Controllers;
 
 public abstract class LazyCoreController<TDto, TEntity> : ApiControllerBase
     where TDto : DtoCore, new()
     where TEntity : EntityCore, new()
 {
-    protected readonly IBusinessCoreService<TDto, TEntity> _businessCoreService;
+    protected readonly IBusinessCoreService<TEntity, TDto> _businessCoreService;
 
-    protected LazyCoreController(IBusinessCoreService<TDto, TEntity> businessCoreService)
+    protected LazyCoreController(IBusinessCoreService<TEntity, TDto> businessCoreService)
     {
         _businessCoreService = businessCoreService;
     }
@@ -31,7 +31,7 @@ public abstract class LazyCoreController<TDto, TEntity> : ApiControllerBase
     
     [HttpPost("list")]
     public async Task<IActionResult> GetListWithFilters(
-        [FromBody] List<Filter> filters)
+        [FromBody] Criteria<TEntity> filters)
     {
         return Ok(await _businessCoreService.GetListWithFilters(filters));
     }
@@ -39,7 +39,7 @@ public abstract class LazyCoreController<TDto, TEntity> : ApiControllerBase
     [HttpPost("page")]
     public async Task<IActionResult> GetPageWithFilters(
         [FromQuery] PaginationCriteria pagination,
-        [FromBody] List<Filter> filters)
+        [FromBody] Criteria<TEntity> filters)
     {
         return Ok(await _businessCoreService.GetPageWithFilters(filters, pagination));
     }
@@ -51,15 +51,15 @@ public abstract class LazyCoreController<TDto, TEntity> : ApiControllerBase
     }
 
     [HttpPost("add")]
-    public async Task<IActionResult> Add([FromBody] TDto entityDto)
+    public async Task<IActionResult> Add([FromBody] List<TDto> dtos)
     {
-        return Ok(await _businessCoreService.Add(entityDto));
+        return Ok(await _businessCoreService.Add(dtos));
     }
 
     [HttpPut("update")]
-    public async Task<IActionResult> Update([FromBody] TDto entityDto)
+    public async Task<IActionResult> Update([FromBody] List<TDto> dtos)
     {
-        return Ok(await _businessCoreService.Add(entityDto));
+        return Ok(await _businessCoreService.Add(dtos));
     }
 
     [HttpGet("exists/{id}")]
@@ -69,16 +69,9 @@ public abstract class LazyCoreController<TDto, TEntity> : ApiControllerBase
     }
 
     [HttpDelete("delete/{id}")]
-    public async Task<IActionResult> Delete([FromRoute] Guid id)
+    public async Task<IActionResult> Delete([FromRoute] List<Guid> ids)
     {
-        await _businessCoreService.DeleteById(id);
-        return NoContent();
-    }
-    
-    [HttpDelete("delete")]
-    public async Task<IActionResult> Delete([FromBody] TDto entityDto)
-    {
-        await _businessCoreService.Delete(entityDto);
+        await _businessCoreService.DeleteById(ids);
         return NoContent();
     }
 }

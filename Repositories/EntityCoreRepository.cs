@@ -3,98 +3,126 @@ using System.Linq.Expressions;
 using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
 using GenericWebAPI.Models;
+using GenericWebAPI.Repositories.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace Fakeglass.Repositories.Extensions;
+namespace GenericWebAPI.Repositories;
 
 public abstract class EntityCoreRepository<TEntity> : ICoreRepository<TEntity> where TEntity : EntityCore, new()
 {
     protected readonly DbBaseContext _context;
 
-    protected EntityCoreRepository(DbBaseContext context)
+    public EntityCoreRepository(DbBaseContext context)
     {
         _context = context;
     }
 
+    public virtual async Task<TEntity?> Get(Expression<Func<TEntity, bool>> predicate)
+    {
+        return await _context.Set<TEntity?>().FirstOrDefaultAsync(predicate);
+    }
+
     public virtual async Task<TEntity?> GetById(Guid id)
     {
-        return await _context.Set<TEntity>().FindAsync(id);
+        return await Get(e => e.Id == id);
     }
 
-    public virtual async Task<TEntity?> GetByPredicate(Expression<Func<TEntity, bool>> predicate)
+    public virtual async Task<IEnumerable<TEntity>> GetAll(Expression<Func<TEntity, bool>>? predicate = null)
     {
-        return await _context.Set<TEntity>().FirstOrDefaultAsync(predicate);
-    }
-
-    public virtual async Task<List<TEntity>> GetAll()
-    {
-        return await _context.Set<TEntity>().ToListAsync();
-    }
-
-    public virtual async Task<List<TEntity>> GetAllByIds(List<Guid> ids)
-    {
-        return await _context.Set<TEntity>()
-            .Where(entity => ids.Contains(entity.Id))
-            .ToListAsync();
-    }
-    
-    public virtual async Task<List<TEntity>> GetListWithFilters(List<Filter> filters)
-    {
-        var queryable = _context.Set<TEntity>().AsQueryable();
-
-        foreach (var filter in filters)
+        if (predicate == null)
         {
-            queryable = Convert(queryable, filter);
+            return await _context.Set<TEntity>().ToListAsync();
         }
-
-        var filteredData = await queryable.ToListAsync();
-
-        return filteredData;
-    }
-    
-    public virtual async Task<List<TEntity>> GetPageWithFilters(List<Filter> filters, IPagination pagination)
-    {
-        var queryable = _context.Set<TEntity>().AsQueryable();
-
-        foreach (var filter in filters)
+        else
         {
-            queryable = Convert(queryable, filter);
+            return await _context.Set<TEntity>().Where(predicate).ToListAsync();
         }
-
-        var filteredData = await Paginate(queryable, pagination).ToListAsync();
-
-        return filteredData;
     }
 
-    public virtual async Task<int> Count()
+    public virtual async Task<IEnumerable<TEntity>> GetAllById(IEnumerable<Guid> ids)
     {
-        return await _context.Set<TEntity>().CountAsync();
+        return await GetAll(e => ids.Contains(e.Id));
     }
 
-    public virtual async Task<TEntity> Add(TEntity entity)
-    {
-        var entityAdd = await _context.Set<TEntity>().AddAsync(entity);
-        return entityAdd.Entity;
-    }
-    
-    public virtual async Task<IEnumerable<TEntity>> AddRange(IEnumerable<TEntity> entities)
+    public virtual async Task<IEnumerable<TEntity>> Add(IEnumerable<TEntity> entities)
     {
         await _context.Set<TEntity>().AddRangeAsync(entities);
         return entities;
     }
 
-    public virtual async Task<TEntity> Update(TEntity entity)
-    {
-        var entityUpdate = _context.Set<TEntity>().Update(entity);
-        return entityUpdate.Entity;
-    }
-    
-    public virtual async Task<IEnumerable<TEntity>> UpdateRange(IEnumerable<TEntity> entities)
+    public virtual async Task<IEnumerable<TEntity>> Update(IEnumerable<TEntity> entities)
     {
         _context.Set<TEntity>().UpdateRange(entities);
         return entities;
     }
     
+    public virtual async Task Delete(IEnumerable<TEntity> entities)
+    {
+        _context.Set<TEntity>().RemoveRange(entities);
+    }
+
+    public virtual async Task Delete(Expression<Func<TEntity, bool>> predicate)
+    {
+        var entities = await _context.Set<TEntity>().Where(predicate).ToListAsync();
+        await Delete(entities);
+    }
+
+    public virtual async Task DeleteById(IEnumerable<Guid> ids)
+    {
+        var entity = await GetAll(e => ids.Contains(e.Id));
+        await Delete(entity);
+    }
+
+    public virtual async Task<IEnumerable<TEntity>> GetListWithFilters(Criteria<TEntity> criteria)
+    {
+        var query = _context.Set<TEntity>().AsQueryable();
+
+        var predicate = criteria.BuildExpression();
+        if (predicate != null)
+        {
+            query = query.Where(predicate);
+        }
+
+        return await query.ToListAsync();
+    }
+
+    public virtual async Task<IEnumerable<TEntity>> GetPageWithFilters(Criteria<TEntity> criteria, IPagination pagination)
+    {
+        var query = _context.Set<TEntity>().AsQueryable();
+
+        var predicate = criteria.BuildExpression();
+        if (predicate != null)
+        {
+            query = query.Where(predicate);
+        }
+
+        var filteredData = await Paginate(query, pagination).ToListAsync();
+
+        return filteredData;
+    }
+
+    public virtual async Task<int> Count(Expression<Func<TEntity, bool>>? predicate = null)
+    {
+        if (predicate == null)
+        {
+            return await _context.Set<TEntity>().CountAsync();
+        }
+        else
+        {
+            return await _context.Set<TEntity>().CountAsync(predicate);
+        }
+    }
+
+    public virtual async Task<bool> Exists(Expression<Func<TEntity, bool>> predicate)
+    {
+        return await _context.Set<TEntity>().AnyAsync(predicate);
+    }
+
+    public virtual async Task<bool> ExistsById(Guid id)
+    {
+        return await Exists(e => e.Id == id);
+    }
+
     public virtual async Task<TEntity> AddOrUpdate(Expression<Func<TEntity, bool>> predicate, TEntity entity)
     {
         var existingEntity = await _context.Set<TEntity>().FirstOrDefaultAsync(predicate);
@@ -130,146 +158,18 @@ public abstract class EntityCoreRepository<TEntity> : ICoreRepository<TEntity> w
     
         return results;
     }
-
-    public virtual async Task<bool> ExistsById(Guid id)
-    {
-        return await GetById(id) != null;
-    }
-    
-    public virtual async Task<bool> ExistsByPredicate(Expression<Func<TEntity, bool>> predicate)
-    {
-        return await GetByPredicate(predicate) != null;
-    }
-
-    public virtual async Task DeleteById(Guid id)
-    {
-        _context.Set<TEntity>().Remove(new TEntity { Id = id });
-    }
-
-    public virtual async Task Delete(TEntity entity)
-    {
-        _context.Set<TEntity>().Remove(entity);
-    }
-    
-    public virtual async Task<bool> DeleteByPredicate(Expression<Func<TEntity, bool>> predicate)
-    {
-        var entityToDelete = await _context.Set<TEntity>().FirstOrDefaultAsync(predicate);
-        if (entityToDelete == null) return false;
-
-        _context.Set<TEntity>().Remove(entityToDelete);
-    
-        return true;
-    }
     
     public virtual async Task SaveChanges()
     {
         await _context.SaveChangesAsync();
     }
-
-    public async Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesById<TRelatedEntity>(Guid id, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new()
-    {
-        return await _context.Set<TEntity>()
-            .Where(e => e.Id == id)
-            .SelectMany(property)
-            .ToListAsync();
-    }
     
-    public async Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesByPredicate<TRelatedEntity>(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new()
-    {
-        return await _context.Set<TEntity>()
-            .Where(predicate)
-            .SelectMany(property)
-            .ToListAsync();
-    }
-
-    private IQueryable<TF> Convert<TF>(IQueryable<TF> queryable, Filter filter)
-    {
-        var param = Expression.Parameter(typeof(TF), "x");
-        Expression expression = Expression.Constant(true);
-
-        var property = Expression.Property(param, filter.Property);
-
-        var value1 = ConvertPropertyType(filter.Value1, property.Type);
-        var expression1 = ConvertToNullable(Expression.Constant(value1), value1.GetType());
-
-        var value2 = filter.Value2 != null ? ConvertPropertyType(filter.Value2, property.Type) : null;
-        var expression2 = filter.Value2 != null ? ConvertToNullable(Expression.Constant(value2), value2.GetType()) : null;
-
-        switch (filter.FilterType)
-        {
-            case FilterType.EXACT:
-                expression = Expression.AndAlso(expression, Expression.Equal(property, expression1));
-                break;
-            case FilterType.LIKE:
-                expression = Expression.AndAlso(expression, Expression.Call(property, "Contains", Type.EmptyTypes, expression1));
-                break;
-            case FilterType.BETWEEN:
-                expression = Expression.AndAlso(expression, Expression.AndAlso(Expression.GreaterThanOrEqual(property, expression1), Expression.LessThanOrEqual(property, expression2)));
-                break;
-            case FilterType.LESS_THAN:
-                expression = Expression.AndAlso(expression, Expression.LessThanOrEqual(property, expression1));
-                break;
-            case FilterType.MORE_THAN:
-                expression = Expression.AndAlso(expression, Expression.GreaterThanOrEqual(property, expression1));
-                break;
-            default:
-                throw new ArgumentException("Invalid filter type.");
-        }
-
-            var lambda = Expression.Lambda<Func<TEntity, bool>>(expression, param);
-
-            return queryable.Where(lambda);
-    }
-
-    private IQueryable<TEntity> Paginate(IQueryable<TEntity> queryable, IPagination paginationSearch)
+    protected IQueryable<TEntity> Paginate(IQueryable<TEntity> queryable, IPagination paginationSearch)
     {
         return queryable
             .Skip((paginationSearch.GetPageNumber() - 1) * paginationSearch.GetPageSize())
             .Take(paginationSearch.GetPageSize())
             .OrderBy($"{paginationSearch.GetSortName()} {paginationSearch.GetSortDir()}");
-    }
-
-    private object ConvertPropertyType(string value, Type propertyType)
-    {
-        if (propertyType == typeof(int) || propertyType == typeof(int?))
-        {
-            return (int?)(int.Parse(value));
-        }
-        if (propertyType == typeof(long) || propertyType == typeof(long?))
-        {
-            return long.Parse(value);
-        }
-        if (propertyType == typeof(float) || propertyType == typeof(float?))
-        {
-            return float.Parse(value);
-        }
-        if (propertyType == typeof(double) || propertyType == typeof(double?))
-        {
-            return double.Parse(value);
-        }
-        if (propertyType == typeof(DateTime) || propertyType == typeof(DateTime?))
-        {
-            return DateTime.Parse(value);
-        }
-        return value;
-    }
-    
-    private Expression ConvertToNullable(Expression e1, Type type)
-    {
-        if (type == typeof(string))
-        {
-            return e1;
-        }
-        if (!IsNullableType(e1.Type))
-        {
-            e1 = Expression.Convert(e1, typeof(Nullable<>).MakeGenericType(type));
-        }
-        return e1;
-    }
-    
-    private bool IsNullableType(Type t)
-    {
-        return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>);
     }
     
     protected void UpdateEntity(TEntity existingEntity, TEntity newEntity)

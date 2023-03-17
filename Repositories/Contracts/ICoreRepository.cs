@@ -3,29 +3,35 @@ using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
 using GenericWebAPI.Models;
 
-namespace Fakeglass.Repositories.Extensions;
+namespace GenericWebAPI.Repositories.Contracts;
 
+/// <summary>
+/// Core functions for a usable repository
+/// </summary>
+/// <typeparam name="TEntity"></typeparam>
 public interface ICoreRepository<TEntity> where TEntity : EntityCore, new()
 {
+    // Basic CRUD operations
+    Task<TEntity?> Get(Expression<Func<TEntity, bool>> predicate);
     Task<TEntity?> GetById(Guid id);
-    Task<TEntity?> GetByPredicate(Expression<Func<TEntity, bool>> predicate);
-    Task<List<TEntity>> GetAll();
-    Task<List<TEntity>> GetAllByIds(List<Guid> ids);
-    Task<List<TEntity>> GetListWithFilters(List<Filter> filters);
-    Task<List<TEntity>> GetPageWithFilters(List<Filter> filters, IPagination pagination);
-    Task<int> Count();
-    Task<TEntity> Add(TEntity entity);
-    Task<IEnumerable<TEntity>> AddRange(IEnumerable<TEntity> entities);
-    Task<TEntity> Update(TEntity entity);
-    Task<IEnumerable<TEntity>> UpdateRange(IEnumerable<TEntity> entities);
+    Task<IEnumerable<TEntity>> GetAll(Expression<Func<TEntity, bool>>? predicate = null);
+    Task<IEnumerable<TEntity>> GetAllById(IEnumerable<Guid> ids);
+    Task<IEnumerable<TEntity>> Add(IEnumerable<TEntity> entities);
+    Task<IEnumerable<TEntity>> Update(IEnumerable<TEntity> entities);
+    Task Delete(Expression<Func<TEntity, bool>> predicate);
+    Task Delete(IEnumerable<TEntity> entity);
+    Task DeleteById(IEnumerable<Guid> id);
+
+    // Filters, paginations
+    Task<IEnumerable<TEntity>> GetListWithFilters(Criteria<TEntity> criteria);
+    Task<IEnumerable<TEntity>> GetPageWithFilters(Criteria<TEntity> criteria, IPagination pagination);
+    
+    // Miscellaneous
+    Task<int> Count(Expression<Func<TEntity, bool>>? predicate = null);
+    Task<bool> Exists(Expression<Func<TEntity, bool>> predicate);
+    Task<bool> ExistsById(Guid id);
+    
     Task<TEntity> AddOrUpdate(Expression<Func<TEntity, bool>> predicate, TEntity entity);
     Task<IEnumerable<TEntity>> AddOrUpdate(Expression<Func<TEntity, bool>> predicate, IEnumerable<TEntity> entity);
-    Task<bool> ExistsById(Guid id);
-    Task<bool> ExistsByPredicate(Expression<Func<TEntity, bool>> predicate);
-    Task DeleteById(Guid id);
-    Task Delete(TEntity entity);
-    Task<bool> DeleteByPredicate(Expression<Func<TEntity, bool>> predicate);
     Task SaveChanges();
-    Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesById<TRelatedEntity>(Guid id, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new();
-    Task<IEnumerable<TRelatedEntity>> GetRelatedEntitiesByPredicate<TRelatedEntity>(Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property) where TRelatedEntity : EntityCore, new();
 }
