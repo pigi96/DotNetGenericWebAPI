@@ -2,34 +2,27 @@ using System.Linq.Expressions;
 using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
 using GenericWebAPI.Models;
+using GenericWebAPI.Utilities;
 
-namespace GenericWebAPI.Services.Extensions;
+namespace GenericWebAPI.Services.Contracts;
 
-public interface IBusinessCoreService<TDto, TEntity>
+public interface IBusinessCoreService<TEntity, TDto>
     where TDto : DtoCore, new()
     where TEntity : EntityCore, new()
 {
+    Task<TDto?> Get(Expression<Func<TEntity, bool>> predicate);
     Task<TDto?> GetById(Guid id);
-    Task<TDto?> GetByPredicate(Expression<Func<TEntity, bool>> predicate);
-    Task<List<TDto>> GetAll();
-    Task<List<TDto>> GetListWithFilters(List<Filter> filters);
-    Task<List<TDto>> GetPageWithFilters(List<Filter> filters, IPagination pagination);
-    Task<int> Count();
-    Task<TDto> Add(TDto entity);
-    Task<TDto> Update(TDto entity, Expression<Func<TEntity, bool>> predicate);
+    Task<IEnumerable<TDto>> GetAll(Expression<Func<TEntity, bool>>? predicate = null);
+    Task<IEnumerable<TDto>> GetAllById(IEnumerable<Guid> ids);
+    Task<IEnumerable<TDto>> Add(ICollection<TDto>? entities = null, IValidator<TDto>? validator = null, IBusinessStrategy<TEntity, TDto>? businessStrategy = null);
+    Task<IEnumerable<TDto>> Update(ICollection<TDto>? entities = null, IValidator<TDto>? validator = null, IBusinessStrategy<TEntity, TDto>? businessStrategy = null);
+    Task Delete(Expression<Func<TEntity, bool>> predicate, IBusinessStrategy<TEntity, TDto>? businessStrategy = null);
+    Task DeleteById(IEnumerable<Guid> id, IBusinessStrategy<TEntity, TDto>? businessStrategy = null);
+
+    Task<IEnumerable<TDto>> GetListWithFilters(Criteria<TEntity> criteria);
+    Task<IEnumerable<TDto>> GetPageWithFilters(Criteria<TEntity> criteria, IPagination pagination);
+    
+    Task<int> Count(Expression<Func<TEntity, bool>>? predicate = null);
+    Task<bool> Exists(Expression<Func<TEntity, bool>> predicate);
     Task<bool> ExistsById(Guid id);
-    Task<bool> ExistsByPredicate(Expression<Func<TEntity, bool>> predicate);
-    Task DeleteById(Guid id);
-    Task Delete(TDto entity);
-    Task DeleteByPredicate(Expression<Func<TEntity, bool>> predicate);
-
-    Task<IEnumerable<TRelatedDto>> GetRelatedEntitiesById<TRelatedDto, TRelatedEntity>(Guid id,
-        Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property)
-        where TRelatedEntity : EntityCore, new()
-        where TRelatedDto : DtoCore, new();
-
-    Task<IEnumerable<TRelatedDto>> GetRelatedEntitiesByPredicate<TRelatedDto, TRelatedEntity>(
-        Expression<Func<TEntity, bool>> predicate, Expression<Func<TEntity, IEnumerable<TRelatedEntity>>> property)
-        where TRelatedEntity : EntityCore, new()
-        where TRelatedDto : DtoCore, new();
 }

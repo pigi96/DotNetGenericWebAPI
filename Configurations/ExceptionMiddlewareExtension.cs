@@ -1,7 +1,7 @@
 using GenericWebAPI.Models.Errors;
 using Microsoft.AspNetCore.Builder;
 
-namespace GenericWebAPI.Configuration;
+namespace GenericWebAPI.Configurations;
 
 public static class ExceptionMiddlewareExtension
 {

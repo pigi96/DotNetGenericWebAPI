@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 
-namespace GenericWebAPI.Configuration;
+namespace GenericWebAPI.Configurations;
 
 public static class SwaggerExtensions
 {

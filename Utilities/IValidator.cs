@@ -2,7 +2,7 @@ namespace GenericWebAPI.Utilities;
 
 public interface IValidator<TDto>
 {
-    bool ValidateAdd(TDto dto);
-    bool ValidateUpdate(TDto dto);
-    bool ValidateDelete(TDto dto);
+    bool ValidateAdd(IEnumerable<TDto> dto);
+    bool ValidateUpdate(IEnumerable<TDto> dto);
+    bool ValidateDelete(IEnumerable<TDto> dto);
 }
