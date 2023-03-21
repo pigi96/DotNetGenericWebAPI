@@ -6,4 +6,9 @@ public static class Utility
     {
         yield return item;
     }
+
+    public static ICollection<T> ToCollection<T>(this T item)
+    {
+        return new List<T> { item };
+    }
 }

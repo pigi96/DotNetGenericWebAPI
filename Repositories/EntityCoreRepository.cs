@@ -17,9 +17,20 @@ public abstract class EntityCoreRepository<TEntity> : ICoreRepository<TEntity> w
         _context = context;
     }
 
-    public virtual async Task<TEntity?> Get(Expression<Func<TEntity, bool>> predicate)
+    public virtual async Task<TEntity?> Get(params Expression<Func<TEntity, bool>>[] predicates)
     {
-        return await _context.Set<TEntity?>().FirstOrDefaultAsync(predicate);
+        if (predicates == null || predicates.Length == 0)
+        {
+            throw new ArgumentException("At least one predicate is required", nameof(predicates));
+        }
+
+        var query = _context.Set<TEntity>().Where(predicates[0]);
+        for (int i = 1; i < predicates.Length; i++)
+        {
+            query = query.Where(predicates[i]);
+        }
+
+        return await query.FirstOrDefaultAsync();
     }
 
     public virtual async Task<TEntity?> GetById(Guid id)

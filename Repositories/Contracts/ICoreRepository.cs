@@ -12,7 +12,7 @@ namespace GenericWebAPI.Repositories.Contracts;
 public interface ICoreRepository<TEntity> where TEntity : EntityCore, new()
 {
     // Basic CRUD operations
-    Task<TEntity?> Get(Expression<Func<TEntity, bool>> predicate);
+    Task<TEntity?> Get(params Expression<Func<TEntity, bool>>[] predicates);
     Task<TEntity?> GetById(Guid id);
     Task<IEnumerable<TEntity>> GetAll(Expression<Func<TEntity, bool>>? predicate = null);
     Task<IEnumerable<TEntity>> GetAllById(IEnumerable<Guid> ids);

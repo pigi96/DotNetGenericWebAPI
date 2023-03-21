@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using AutoMapper;
 using GenericWebAPI.Filters.Contract;
@@ -6,6 +8,7 @@ using GenericWebAPI.Models;
 using GenericWebAPI.Repositories.Contracts;
 using GenericWebAPI.Services.Contracts;
 using GenericWebAPI.Utilities;
+using Microsoft.VisualBasic;
 
 namespace GenericWebAPI.Services;
 
@@ -55,13 +58,21 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
             .ToList();
     }
 
-    public virtual async Task<IEnumerable<TDto>> Add(IEnumerable<TDto> dtos)
+    public virtual async Task<IEnumerable<TDto>> Add(
+        ICollection<TDto>? dtos = null,
+        IValidator<TDto>? validator = null,
+        IBusinessStrategy<TEntity, TDto>? businessStrategy = null)
     {
-        _validator.ValidateAdd(dtos);
-
-        var entitiesToAdd = dtos.Select(dto => _mapper.Map<TEntity>(dto)).ToList();
+        validator ??= _validator;
+        businessStrategy ??= _businessStrategy;
         
-        await _businessStrategy.ApplyAdd(entitiesToAdd);
+        var entitiesToAdd = dtos == null ? new List<TEntity>() : null;
+        
+        validator.ValidateAdd(dtos);
+
+        entitiesToAdd ??= dtos.Select(dto => _mapper.Map<TEntity>(dto)).ToList();
+
+        await businessStrategy.ApplyAdd(entitiesToAdd);
 
         var addedEntities = await _coreRepository.Add(entitiesToAdd);
 
@@ -69,13 +80,21 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
         return addedEntities.Select(e => _mapper.Map<TDto>(e));
     }
 
-    public virtual async Task<IEnumerable<TDto>> Update(IEnumerable<TDto> dtos)
+    public virtual async Task<IEnumerable<TDto>> Update(
+        ICollection<TDto>? dtos = null,
+        IValidator<TDto>? validator = null,
+        IBusinessStrategy<TEntity, TDto>? businessStrategy = null)
     {
-        _validator.ValidateAdd(dtos);
-
-        var entitiesToUpdate = dtos.Select(dto => _mapper.Map<TEntity>(dto)).ToList();
+        validator ??= _validator;
+        businessStrategy ??= _businessStrategy;
         
-        await _businessStrategy.ApplyAdd(entitiesToUpdate);
+        var entitiesToUpdate = dtos == null ? new List<TEntity>() : null;
+        
+        validator.ValidateUpdate(dtos);
+
+        entitiesToUpdate ??= dtos.Select(dto => _mapper.Map<TEntity>(dto)).ToList();
+
+        await businessStrategy.ApplyUpdate(entitiesToUpdate);
 
         var updatedEntities = await _coreRepository.Update(entitiesToUpdate);
 
@@ -83,21 +102,29 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
         return updatedEntities.Select(e => _mapper.Map<TDto>(e));
     }
 
-    public virtual async Task Delete(Expression<Func<TEntity, bool>> predicate)
+    public virtual async Task Delete(
+        Expression<Func<TEntity, bool>> predicate,
+        IBusinessStrategy<TEntity, TDto>? businessStrategy = null)
     {
+        businessStrategy ??= _businessStrategy;
+        
         var entitiesToDelete = (await _coreRepository.GetAll(predicate)).ToList();
 
-        await _businessStrategy.ApplyDelete(entitiesToDelete);
+        await businessStrategy.ApplyDelete(entitiesToDelete);
 
         await _coreRepository.Delete(entitiesToDelete);
         await _coreRepository.SaveChanges();
     }
 
-    public virtual async Task DeleteById(IEnumerable<Guid> ids)
+    public virtual async Task DeleteById(
+        IEnumerable<Guid> ids,
+        IBusinessStrategy<TEntity, TDto>? businessStrategy = null)
     {
+        businessStrategy ??= _businessStrategy;
+        
         var entitiesToDelete = (await _coreRepository.GetAllById(ids)).ToList();
 
-        await _businessStrategy.ApplyDelete(entitiesToDelete);
+        await businessStrategy.ApplyDelete(entitiesToDelete);
 
         await _coreRepository.Delete(entitiesToDelete);
         await _coreRepository.SaveChanges();
