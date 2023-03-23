@@ -23,6 +23,8 @@ public static class SwaggerExtensions
             var scopesArray = configuration.GetSection("AzureAd:Swagger")["Scopes-optional"].Split(",")
                 .Select(s => s.Trim())
                 .ToArray();
+            
+            //c.SchemaFilter<EnumSchemaFilter>();
 
             c.SwaggerDoc("v1",
                 new OpenApiInfo
@@ -57,7 +59,7 @@ public static class SwaggerExtensions
                 }
             });
         });
-
+        
         return services;
     }
 

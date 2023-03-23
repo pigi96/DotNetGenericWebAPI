@@ -88,15 +88,18 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
         validator ??= _validator;
         businessStrategy ??= _businessStrategy;
         
-        var entitiesToUpdate = dtos == null ? new List<TEntity>() : null;
-        
         validator.ValidateUpdate(dtos);
 
-        entitiesToUpdate ??= dtos.Select(dto => _mapper.Map<TEntity>(dto)).ToList();
+        var entitiesFromDb = new List<TEntity>(await _coreRepository.GetAllById(dtos.Select(e => e.Id)));
+        foreach (var entityFromDb in entitiesFromDb)
+        {
+            var dtoToUpdate = dtos.Single(dto => dto.Id == entityFromDb.Id);
+            _mapper.Map(dtoToUpdate, entityFromDb);
+        }
+        
+        await businessStrategy.ApplyUpdate(entitiesFromDb);
 
-        await businessStrategy.ApplyUpdate(entitiesToUpdate);
-
-        var updatedEntities = await _coreRepository.Update(entitiesToUpdate);
+        var updatedEntities = await _coreRepository.Update(entitiesFromDb);
 
         await _coreRepository.SaveChanges();
         return updatedEntities.Select(e => _mapper.Map<TDto>(e));
