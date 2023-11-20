@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using AutoMapper;
-using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
+using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
 using GenericWebAPI.Repositories.Contracts;
 using GenericWebAPI.Services.Contracts;
@@ -22,22 +22,29 @@ public class BusinessExtendedService<TEntity, TDto> : BusinessCoreService<TEntit
     }
 
 
-    public virtual async Task<IEnumerable<TEntity>> GetListWithFilters(IEnumerable<Filter> filters)
+    public virtual async Task<IEnumerable<TDto>> GetListWithFilters(IEnumerable<Filter> filters)
     {
         var entites = await _extendedRepository.GetListWithFilters(filters);
 
         return entites
-            .Select(entity => _mapper.Map<TEntity>(entity))
+            .Select(entity => _mapper.Map<TDto>(entity))
             .ToList();
     }
 
-    public virtual async Task<IEnumerable<TEntity>> GetPageWithFilters(IEnumerable<Filter> filters, IPagination pagination)
+    public virtual async Task<PagedResult<TDto>> GetPageWithFilters(IEnumerable<Filter> filters, PaginationCriteria pagination)
     {
-        var entites = await _extendedRepository.GetPageWithFilters(filters, pagination);
+        var entities = await _extendedRepository.GetPageWithFilters(filters, pagination);
 
-        return entites
-            .Select(entity => _mapper.Map<TEntity>(entity))
-            .ToList();
+        return new PagedResult<TDto>()
+        {
+            Results = entities
+                .Select(entity => _mapper.Map<TDto>(entity))
+                .ToList(),
+            Page = pagination.Page,
+            PageSize = pagination.PageSize,
+            TotalPages = (int)Math.Ceiling((await _coreRepository.Count()) / (double)pagination.PageSize),
+            TotalElements = await _coreRepository.Count()
+        };
     }
 
     public virtual async Task<IEnumerable<TRelatedDto>> GetRelatedEntitiesById<TRelatedDto, TRelatedEntity>(Guid id,

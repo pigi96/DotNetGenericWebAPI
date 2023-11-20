@@ -1,3 +1,4 @@
+using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
 using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
@@ -10,68 +11,68 @@ public abstract class LazyCoreController<TDto, TEntity> : ApiControllerBase
     where TDto : DtoCore, new()
     where TEntity : EntityCore, new()
 {
-    protected readonly IBusinessCoreService<TEntity, TDto> _businessCoreService;
+    protected readonly IBusinessExtendedService<TEntity, TDto> _businessExtendedService;
 
-    protected LazyCoreController(IBusinessCoreService<TEntity, TDto> businessCoreService)
+    protected LazyCoreController(IBusinessExtendedService<TEntity, TDto> businessExtendedService)
     {
-        _businessCoreService = businessCoreService;
+        _businessExtendedService = businessExtendedService;
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id)
     {
-        return Ok(await _businessCoreService.GetById(id));
+        return Ok(await _businessExtendedService.GetById(id));
     }
 
     [HttpGet("")]
     public async Task<IActionResult> GetAll()
     {
-        return Ok(await _businessCoreService.GetAll());
+        return Ok(await _businessExtendedService.GetAll());
     }
     
     [HttpPost("list")]
     public async Task<IActionResult> GetListWithFilters(
-        [FromBody] Criteria<TEntity> filters)
+        [FromBody] IEnumerable<Filter> filters)
     {
-        return Ok(await _businessCoreService.GetListWithFilters(filters));
+        return Ok(await _businessExtendedService.GetListWithFilters(filters));
     }
 
     [HttpPost("page")]
     public async Task<IActionResult> GetPageWithFilters(
         [FromQuery] PaginationCriteria pagination,
-        [FromBody] Criteria<TEntity> filters)
+        [FromBody] IEnumerable<Filter> filters)
     {
-        return Ok(await _businessCoreService.GetPageWithFilters(filters, pagination));
+        return Ok(await _businessExtendedService.GetPageWithFilters(filters, pagination));
     }
 
     [HttpGet("count")]
     public async Task<IActionResult> GetCount()
     {
-        return Ok(await _businessCoreService.Count());
+        return Ok(await _businessExtendedService.Count());
     }
 
     [HttpPost("add")]
     public async Task<IActionResult> Add([FromBody] List<TDto> dtos)
     {
-        return Ok(await _businessCoreService.Add(dtos));
+        return Ok(await _businessExtendedService.Add(dtos));
     }
 
     [HttpPut("update")]
     public async Task<IActionResult> Update([FromBody] List<TDto> dtos)
     {
-        return Ok(await _businessCoreService.Add(dtos));
+        return Ok(await _businessExtendedService.Add(dtos));
     }
 
     [HttpGet("exists/{id}")]
     public async Task<IActionResult> ExistsById([FromRoute] Guid id)
     {
-        return Ok(await _businessCoreService.ExistsById(id));
+        return Ok(await _businessExtendedService.ExistsById(id));
     }
 
     [HttpDelete("delete/{id}")]
     public async Task<IActionResult> Delete([FromRoute] List<Guid> ids)
     {
-        await _businessCoreService.DeleteById(ids);
+        await _businessExtendedService.DeleteById(ids);
         return NoContent();
     }
 }

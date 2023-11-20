@@ -1,19 +1,16 @@
-using System.Collections;
-using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using AutoMapper;
-using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
+using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
 using GenericWebAPI.Repositories.Contracts;
 using GenericWebAPI.Services.Contracts;
 using GenericWebAPI.Utilities;
-using Microsoft.VisualBasic;
 
 namespace GenericWebAPI.Services;
 
 public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, TDto>
-    where TEntity : EntityBase, new() 
+    where TEntity : EntityBase, new()
     where TDto : DtoCore, new()
 {
     protected readonly ICoreRepository<TEntity> _coreRepository;
@@ -34,12 +31,12 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
     {
         return _mapper.Map<TDto>(await _coreRepository.Get(predicate));
     }
-    
+
     public virtual async Task<TDto?> GetById(Guid id)
     {
         return _mapper.Map<TDto>(await _coreRepository.GetById(id));
     }
-    
+
     public virtual async Task<IEnumerable<TDto>> GetAll(Expression<Func<TEntity, bool>>? predicate = null)
     {
         var entities = await _coreRepository.GetAll(predicate);
@@ -48,7 +45,7 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
             .Select(entity => _mapper.Map<TDto>(entity))
             .ToList();
     }
-    
+
     public virtual async Task<IEnumerable<TDto>> GetAllById(IEnumerable<Guid> ids)
     {
         var entities = await _coreRepository.GetAllById(ids);
@@ -65,9 +62,9 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
     {
         validator ??= _validator;
         businessStrategy ??= _businessStrategy;
-        
+
         var entitiesToAdd = dtos == null ? new List<TEntity>() : null;
-        
+
         validator.ValidateAdd(dtos);
 
         entitiesToAdd ??= dtos.Select(dto => _mapper.Map<TEntity>(dto)).ToList();
@@ -87,7 +84,7 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
     {
         validator ??= _validator;
         businessStrategy ??= _businessStrategy;
-        
+
         validator.ValidateUpdate(dtos);
 
         var entitiesFromDb = new List<TEntity>(await _coreRepository.GetAllById(dtos.Select(e => e.Id)));
@@ -96,7 +93,7 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
             var dtoToUpdate = dtos.Single(dto => dto.Id == entityFromDb.Id);
             _mapper.Map(dtoToUpdate, entityFromDb);
         }
-        
+
         await businessStrategy.ApplyUpdate(entitiesFromDb);
 
         var updatedEntities = await _coreRepository.Update(entitiesFromDb);
@@ -110,7 +107,7 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
         IBusinessStrategy<TEntity, TDto>? businessStrategy = null)
     {
         businessStrategy ??= _businessStrategy;
-        
+
         var entitiesToDelete = (await _coreRepository.GetAll(predicate)).ToList();
 
         await businessStrategy.ApplyDelete(entitiesToDelete);
@@ -124,7 +121,7 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
         IBusinessStrategy<TEntity, TDto>? businessStrategy = null)
     {
         businessStrategy ??= _businessStrategy;
-        
+
         var entitiesToDelete = (await _coreRepository.GetAllById(ids)).ToList();
 
         await businessStrategy.ApplyDelete(entitiesToDelete);
@@ -142,25 +139,33 @@ public class BusinessCoreService<TEntity, TDto> : IBusinessCoreService<TEntity, 
             .ToList();
     }
 
-    public virtual async Task<IEnumerable<TDto>> GetPageWithFilters(Criteria<TEntity> criteria, IPagination pagination)
+    public virtual async Task<PagedResult<TDto>> GetPageWithFilters(Criteria<TEntity> criteria,
+        PaginationCriteria pagination)
     {
         var entities = await _coreRepository.GetPageWithFilters(criteria, pagination);
 
-        return entities
-            .Select(entity => _mapper.Map<TDto>(entity))
-            .ToList();
+        return new PagedResult<TDto>()
+        {
+            Results = entities
+                .Select(entity => _mapper.Map<TDto>(entity))
+                .ToList(),
+            Page = pagination.Page,
+            PageSize = pagination.PageSize,
+            TotalPages = (int)Math.Ceiling((await _coreRepository.Count()) / (double)pagination.PageSize),
+            TotalElements = await _coreRepository.Count()
+        };
     }
-    
+
     public virtual async Task<int> Count(Expression<Func<TEntity, bool>>? predicate = null)
     {
         return await _coreRepository.Count(predicate);
     }
-    
+
     public virtual async Task<bool> Exists(Expression<Func<TEntity, bool>> predicate)
     {
         return await _coreRepository.Exists(predicate);
     }
-    
+
     public virtual async Task<bool> ExistsById(Guid id)
     {
         return await _coreRepository.ExistsById(id);

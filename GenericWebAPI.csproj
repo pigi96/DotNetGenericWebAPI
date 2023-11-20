@@ -12,7 +12,6 @@
       <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
       <PackageReference Include="LinqKit.Core" Version="1.2.3" />
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.13" />
-      <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="8.0.0-preview.2.23153.2" />
       <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.15" />
       <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0-preview.1.23111.4" />
@@ -21,6 +20,7 @@
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.3" />
       <PackageReference Include="RestSharp" Version="109.0.0-preview.2" />
       <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+      <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0" />
       <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.25" />
     </ItemGroup>
 

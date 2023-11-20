@@ -1,16 +1,26 @@
 using System.Linq.Expressions;
+using GenericWebAPI.Filters.Contract;
+using GenericWebAPI.Models;
 using LinqKit;
 
 namespace GenericWebAPI.Filters.Filtering;
 
-public class Criteria<TEntity> where TEntity : class
+public class Criteria<TEntity> : ICriteria<TEntity> where TEntity : EntityCore
 {
+    protected List<Expression<Func<TEntity, bool>>> Predicates { get; set; }
+
     public Criteria()
     {
         Predicates = new List<Expression<Func<TEntity, bool>>>();
     }
-
-    public List<Expression<Func<TEntity, bool>>> Predicates { get; set; }
+    
+    public void AddPredicate(object value, Expression<Func<TEntity, bool>> predicate)
+    {
+        if (value != null)
+        {
+            Predicates.Add(predicate);
+        }
+    }
 
     public Expression<Func<TEntity, bool>> BuildExpression()
     {
@@ -26,5 +36,10 @@ public class Criteria<TEntity> where TEntity : class
         }
 
         return predicate;
+    }
+
+    public virtual void BuildFilterExpression()
+    {
+        throw new NotImplementedException("Derived classes must override the BuildFilterExpression() method");
     }
 }

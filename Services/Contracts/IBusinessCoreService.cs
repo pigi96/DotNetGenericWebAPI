@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
-using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
+using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
 using GenericWebAPI.Utilities;
 
@@ -20,7 +20,7 @@ public interface IBusinessCoreService<TEntity, TDto>
     Task DeleteById(IEnumerable<Guid> id, IBusinessStrategy<TEntity, TDto>? businessStrategy = null);
 
     Task<IEnumerable<TDto>> GetListWithFilters(Criteria<TEntity> criteria);
-    Task<IEnumerable<TDto>> GetPageWithFilters(Criteria<TEntity> criteria, IPagination pagination);
+    Task<PagedResult<TDto>> GetPageWithFilters(Criteria<TEntity> criteria, PaginationCriteria pagination);
     
     Task<int> Count(Expression<Func<TEntity, bool>>? predicate = null);
     Task<bool> Exists(Expression<Func<TEntity, bool>> predicate);

@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
-using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
+using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
 
 namespace GenericWebAPI.Repositories.Contracts;
@@ -24,7 +24,7 @@ public interface ICoreRepository<TEntity> where TEntity : EntityCore, new()
 
     // Filters, paginations
     Task<IEnumerable<TEntity>> GetListWithFilters(Criteria<TEntity> criteria);
-    Task<IEnumerable<TEntity>> GetPageWithFilters(Criteria<TEntity> criteria, IPagination pagination);
+    Task<IEnumerable<TEntity>> GetPageWithFilters(Criteria<TEntity> criteria, PaginationCriteria pagination);
     
     // Miscellaneous
     Task<int> Count(Expression<Func<TEntity, bool>>? predicate = null);

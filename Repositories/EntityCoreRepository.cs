@@ -1,7 +1,7 @@
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
+using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
 using GenericWebAPI.Repositories.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -97,7 +97,7 @@ public abstract class EntityCoreRepository<TEntity> : ICoreRepository<TEntity> w
         return await query.ToListAsync();
     }
 
-    public virtual async Task<IEnumerable<TEntity>> GetPageWithFilters(Criteria<TEntity> criteria, IPagination pagination)
+    public virtual async Task<IEnumerable<TEntity>> GetPageWithFilters(Criteria<TEntity> criteria, PaginationCriteria pagination)
     {
         var query = _context.Set<TEntity>().AsQueryable();
 
@@ -175,12 +175,12 @@ public abstract class EntityCoreRepository<TEntity> : ICoreRepository<TEntity> w
         await _context.SaveChangesAsync();
     }
     
-    protected IQueryable<TEntity> Paginate(IQueryable<TEntity> queryable, IPagination paginationSearch)
+    protected IQueryable<TEntity> Paginate(IQueryable<TEntity> queryable, PaginationCriteria paginationSearch)
     {
         return queryable
-            .Skip((paginationSearch.GetPageNumber() - 1) * paginationSearch.GetPageSize())
-            .Take(paginationSearch.GetPageSize())
-            .OrderBy($"{paginationSearch.GetSortName()} {paginationSearch.GetSortDir()}");
+            .Skip((paginationSearch.Page - 1) * paginationSearch.PageSize)
+            .Take(paginationSearch.PageSize)
+            .OrderBy($"{paginationSearch.SortName} {paginationSearch.SortDir}");
     }
     
     protected void UpdateEntity(TEntity existingEntity, TEntity newEntity)

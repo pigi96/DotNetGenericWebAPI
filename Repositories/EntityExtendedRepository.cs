@@ -1,7 +1,7 @@
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using GenericWebAPI.Filters.Contract;
 using GenericWebAPI.Filters.Filtering;
+using GenericWebAPI.Filters.SearchCriteria;
 using GenericWebAPI.Models;
 using GenericWebAPI.Repositories.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +31,7 @@ public abstract class EntityExtendedRepository<TEntity> : EntityCoreRepository<T
         return filteredData;
     }
     
-    public virtual async Task<IEnumerable<TEntity>> GetPageWithFilters(IEnumerable<Filter> filters, IPagination pagination)
+    public virtual async Task<IEnumerable<TEntity>> GetPageWithFilters(IEnumerable<Filter> filters, PaginationCriteria pagination)
     {
         var queryable = _context.Set<TEntity>().AsQueryable();
 
